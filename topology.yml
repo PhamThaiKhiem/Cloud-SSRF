@@ -1,0 +1,55 @@
+name: library-cloud-ssrf-container-escape
+
+hosts:
+  - name: kali-attacker
+    base_box:
+      image: kali
+      man_user: debian
+    flavor: standard.small
+  - name: webapp-vm
+    base_box:
+      image: debian-12-x86_64
+      man_user: debian
+    flavor: standard.small
+  - name: docker-host
+    base_box:
+      image: debian-12-x86_64
+      man_user: debian
+    flavor: standard.medium
+  - name: minio-storage
+    base_box:
+      image: debian-12-x86_64
+      man_user: debian
+    flavor: standard.small
+
+routers:
+  - name: router
+    base_box:
+      image: debian-12-x86_64
+      man_user: debian
+    flavor: standard.small
+
+networks:
+  - name: cloud-lab-switch
+    cidr: 172.20.0.0/24
+
+net_mappings:
+  - host: kali-attacker
+    network: cloud-lab-switch
+    ip: 172.20.0.5
+  - host: webapp-vm
+    network: cloud-lab-switch
+    ip: 172.20.0.10
+  - host: docker-host
+    network: cloud-lab-switch
+    ip: 172.20.0.20
+  - host: minio-storage
+    network: cloud-lab-switch
+    ip: 172.20.0.30
+
+router_mappings:
+  - router: router
+    network: cloud-lab-switch
+    ip: 172.20.0.1
+
+groups: []

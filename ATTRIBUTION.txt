@@ -1,0 +1,1 @@
+Original educational lab. Third-party components retain their respective licenses.

