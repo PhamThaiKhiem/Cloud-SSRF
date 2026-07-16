@@ -5,17 +5,20 @@ hosts:
     base_box:
       image: kali
       man_user: debian
-    flavor: standard.small
+    flavor: standard.kali
+    
   - name: webapp-vm
     base_box:
       image: debian-12-x86_64
       man_user: debian
     flavor: standard.small
+    
   - name: docker-host
     base_box:
       image: debian-12-x86_64
       man_user: debian
     flavor: standard.medium
+    
   - name: minio-storage
     base_box:
       image: debian-12-x86_64
