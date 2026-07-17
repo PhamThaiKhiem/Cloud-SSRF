@@ -6,6 +6,7 @@
     update_cache: true
   environment:
     DEBIAN_FRONTEND: noninteractive
+    
 - name: Add lab host aliases
   blockinfile:
     path: /etc/hosts
@@ -14,6 +15,7 @@
       172.20.0.10 image-resizer webapp-vm
       172.20.0.20 docker-host
       172.20.0.30 minio-storage
+      
 - name: Create trainee work directory
   file:
     path: /home/user/cloud-lab
